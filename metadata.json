@@ -1,0 +1,7 @@
+{
+  "name": "AI Promo Pack Builder",
+  "description": "An AI-powered tool that automatically generates a complete promotional package for any topic, including video scripts, thumbnail ideas, social media captions, and a 14-day posting schedule.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
