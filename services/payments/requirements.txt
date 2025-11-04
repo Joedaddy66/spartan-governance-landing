@@ -1,0 +1,16 @@
+fastapi==0.121.0fastapi
+
+uvicorn==0.38.0uvicorn
+
+stripe==13.1.1stripe
+
+psycopg2-binary==2.9.11psycopg2-binary
+
+redis==7.0.1redis
+
+pytest==8.4.2pytest
+
+pytest-cov==7.0.0
+python-dotenv==1.0.0
+sqlalchemy==2.0.23
+pydantic==2.12.3
