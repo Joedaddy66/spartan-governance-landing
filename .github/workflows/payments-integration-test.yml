@@ -1,0 +1,111 @@
+# Payments Integration Test — containerized job with postgres/redis services
+name: Payments Integration Test
+
+on:
+  push:
+    paths:
+      - 'services/payments/**'
+      - '.github/workflows/payments-integration-test.yml'
+  pull_request:
+    paths:
+      - 'services/payments/**'
+      - '.github/workflows/payments-integration-test.yml'
+
+concurrency:
+  group: payments-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: e2e (pytest, container)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    container:
+      image: python:3.11-slim
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: payments
+          POSTGRES_PASSWORD: payments
+          POSTGRES_DB: payments
+        options: >-
+          --health-cmd="pg_isready -U payments -d payments"
+          --health-interval=5s --health-timeout=5s --health-retries=12
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd="redis-cli ping || exit 1"
+          --health-interval=5s --health-timeout=5s --health-retries=12
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: services/payments
+
+    env:
+      DATABASE_URL: postgresql://payments:passwords@postgres:5432/payments
+      REDIS_URL: redis://redis:6379/0
+      STRIPE_API_KEY: ${{ secrets.STRIPE_API_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install apt deps (psql, build tools)
+        run: |
+          apt-get update
+          apt-get install -y gcc libpq-dev postgresql-client curl
+
+      - name: Verify Python
+        run: |
+          python --version
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest pytest-cov
+
+      - name: Wait for Postgres
+        run: |
+          for i in {1..30}; do
+            pg_isready -h postgres -p 5432 -U payments -d payments && break
+            echo "waiting for postgres..."
+            sleep 2
+          done
+
+      - name: Run DB migration (optional if file exists)
+        run: |
+          if [ -f db/migrations/20251103_add_webhook_tables.sql ]; then
+            psql "$DATABASE_URL" -f db/migrations/20251103_add_webhook_tables.sql
+          else
+            echo "migration file not found; continuing"
+          fi
+
+      - name: Run integration tests
+        run: |
+          pytest -q tests/test_end_to_end_integration.py --maxfail=1 --disable-warnings --durations=20
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: payments-e2e-artifacts
+          path: |
+            services/payments/.pytest_cache
+            services/payments/htmlcov
+            services/payments/tests/**/__snapshots__/**
+            services/payments/.coverage
+          if-no-files-found: ignore
