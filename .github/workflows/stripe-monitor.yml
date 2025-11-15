@@ -1,0 +1,86 @@
+name: Stripe Webhook E2E Monitor
+
+on:
+  schedule:
+    # Runs hourly, at 5 minutes past the hour
+    - cron: '5 * * * *'
+  workflow_dispatch: # Allows manual runs from the GitHub Actions UI
+
+jobs:
+  validate-stripe-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send test webhook and capture event ID
+        id: webhook
+        run: |
+          # Generate a unique event ID using the current timestamp
+          TIMESTAMP=$(date +%s)
+          EVENT_ID="evt_test_${TIMESTAMP}"
+          echo "EVENT_ID=${EVENT_ID}" >> $GITHUB_OUTPUT
+
+          # Send the POST request to the webhook
+          # Secrets are used for the URLs for security and flexibility
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            ${{ secrets.WEBHOOK_URL }} \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"id\": \"${EVENT_ID}\",
+              \"type\": \"checkout.session.completed\",
+              \"created\": ${TIMESTAMP},
+              \"data\": {
+                \"object\": {
+                  \"customer_email\": \"monitor@example.com\",
+                  \"amount_total\": 4200,
+                  \"currency\": \"usd\"
+                }
+              }
+            }")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -1)
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Webhook failed with status $HTTP_CODE"
+            exit 1
+          fi
+          
+          if ! echo "$BODY" | grep -q "received.*true"; then
+            echo "❌ Webhook didn't return {received: true}. Body: $BODY"
+            exit 1
+          fi
+          
+          echo "✅ Webhook accepted event: ${EVENT_ID}"
+
+      - name: Wait for DB persistence
+        run: sleep 3 # Increased slightly for production variance
+
+      - name: Verify event in viewer
+        run: |
+          # Fetch the viewer's HTML content
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            ${{ secrets.VIEWER_URL }})
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Viewer failed with status $HTTP_CODE"
+            exit 1
+          fi
+          
+          # Check for the specific event ID we just sent
+          # This is a much stronger guarantee than a generic pattern match
+          if ! echo "$BODY" | grep -q "${{ steps.webhook.outputs.EVENT_ID }}"; then
+            echo "❌ CRITICAL: The exact test event ID was NOT found in the viewer."
+            echo "Body does not contain: ${{ steps.webhook.outputs.EVENT_ID }}"
+            exit 1
+          fi
+          
+          echo "✅ Viewer is healthy and contains the correct event: ${{ steps.webhook.outputs.EVENT_ID }}"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          # This step only runs if a previous step failed
+          echo "🚨 Stripe E2E validation failed! Check the workflow logs for details."
+          # You can add a notification step here (e.g., Slack, Email)
