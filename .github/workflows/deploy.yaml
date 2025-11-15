@@ -1,0 +1,43 @@
+name: Deploy Zero Trust API Gateway
+
+on:
+  push:
+    branches:
+      - main 
+
+jobs:
+  deploy_gateway:
+    runs-on: ubuntu-latest
+    environment: production 
+    permissions:
+      contents: 'read'
+      id-token: 'write'  # Required for the secure WIF Handshake
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. THE HANDSHAKE: Securely authenticate to GCP using WIF
+      - name: Authenticate to Google Cloud (WIF)
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }} 
+          service_account: ${{ secrets.DEPLOY_SERVICE_ACCOUNT }} 
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      # 2. ROBOT READS RULEBOOK: Deploy the OpenAPI Config
+      - name: Create API Config with Firebase Rules
+        run: gcloud api-gateway api-configs create obsidian-agent-config \
+          --api=obsidian-agent-api \
+          --openapi-spec=config.yaml \
+          --project=${{ secrets.GCP_PROJECT_ID }} 
+
+      # 3. ROBOT BUILDS BOUNCER: Deploy the Gateway
+      - name: Deploy API Gateway
+        run: gcloud api-gateway gateways create obsidian-agent-gateway \
+          --api=obsidian-agent-api \
+          --api-config=obsidian-agent-config \
+          --location=us-central1 \
+          --project=${{ secrets.GCP_PROJECT_ID }}
