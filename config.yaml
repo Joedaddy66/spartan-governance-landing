@@ -1,0 +1,42 @@
+swagger: '2.0'
+info:
+  title: obsidian-agent-api 
+  description: The Zero Trust edge for the Cloud Run AI Agent.
+  version: 1.0.0
+host: "${{ secrets.GCP_PROJECT_ID }}.apigateway.gcp-cloud.com" # Host is set by the automation
+schemes:
+  - https
+
+# --- 1. Connect to the Magical Toy Box (Cloud Run) ---
+x-google-backend:
+  address: "https://automated-agent-f3a3a4-uc.a.run.app" # Placeholder for your Cloud Run URL
+  
+# --- 2. Define the Golden Ticket (Firebase JWT) ---
+securityDefinitions:
+  firebase_auth:
+    type: oauth2
+    flow: implicit
+    authorizationUrl: "" 
+    # CRITICAL: The issuer uses your GCP Project ID, which is why it MUST be correct.
+    x-google-issuer: "https://securetoken.google.com/${{ secrets.GCP_PROJECT_ID }}"
+    x-google-jwks_uri: "https://www.googleapis.com/service_accounts/v1/metadata/x509/securetoken@system.gserviceaccount.com"
+    x-google-audiences: "${{ secrets.GCP_PROJECT_ID }}"
+  
+  # --- 3. Define the Rate Limiting Key ---
+  api_key:
+    type: apiKey
+    name: key
+    in: query 
+
+paths:
+  /predict: 
+    post:
+      summary: Get AI Prediction
+      operationId: score-v1
+      # --- 4. Enforce Both Security Rules ---
+      security:
+        - firebase_auth: [] # Mandatory JWT (Authentication)
+        - api_key: []       # Mandatory API Key (Metering/Quota - Minimal Input)
+      responses:
+        '200':
+          description: OK
