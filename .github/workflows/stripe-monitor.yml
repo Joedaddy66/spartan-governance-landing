@@ -20,8 +20,8 @@ jobs:
 
           # Send the POST request to the webhook
           # Secrets are used for the URLs for security and flexibility
-          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            ${{ secrets.WEBHOOK_URL }} \
+          URL="${{ secrets.WEBHOOK_URL }}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$URL" \
             -H "Content-Type: application/json" \
             -d "{
               \"id\": \"${EVENT_ID}\",
@@ -57,8 +57,8 @@ jobs:
       - name: Verify event in viewer
         run: |
           # Fetch the viewer's HTML content
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
-            ${{ secrets.VIEWER_URL }})
+          URL="${{ secrets.VIEWER_URL }}"
+          RESPONSE=$(curl -s -w "\n%{http_code}" "$URL")
           
           HTTP_CODE=$(echo "$RESPONSE" | tail -1)
           BODY=$(echo "$RESPONSE" | sed '$d')
