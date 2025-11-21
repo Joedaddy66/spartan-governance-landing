@@ -3,4 +3,10 @@
   "outputDirectory": "dist",
   "framework": null,
   "devCommand": "npm run dev"
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
 }
