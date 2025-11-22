@@ -64,10 +64,10 @@ The project also includes a FastAPI-based payment service with Stripe integratio
 1. **Frontend Development**:
    ```bash
    npm install
-   npm run dev  # Starts dev server on http://localhost:3000
+   npm run dev  # Starts dev server on 0.0.0.0:3000 (accessible via http://localhost:3000)
    ```
    - Set `GEMINI_API_KEY` in `.env.local` for AI features
-   - Vite dev server runs on port 3000 with hot module replacement
+   - Vite dev server runs on port 3000 (binds to 0.0.0.0 for network access) with hot module replacement
 
 2. **Building for Production**:
    ```bash
@@ -199,7 +199,7 @@ Backend (`services/payments/.env`):
 - `react` and `react-dom` v19.2.0 (latest)
 - `@google/genai` for Gemini AI integration
 - `@vitejs/plugin-react` for JSX transformation
-- No CSS framework installed (using Tailwind via CDI or utility classes)
+- No CSS framework installed (using Tailwind via CDN or utility classes)
 
 ### Backend (Python)
 - `fastapi` for API framework
