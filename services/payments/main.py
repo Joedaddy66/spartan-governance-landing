@@ -7,8 +7,6 @@ Handles all Stripe events and triggers marketplace store creation.
 from __future__ import annotations
 
 import os
-import hmac
-import hashlib
 import json
 from typing import Optional, Dict, Any
 
@@ -93,48 +91,24 @@ async def stripe_webhook(
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET")
 
     if not webhook_secret:
-        # If no webhook secret is configured, skip signature verification
-        # This allows the GitHub Actions workflow test to work
-        pass
+        # This is insecure and should only be enabled in a controlled test environment.
+        if os.getenv("ALLOW_INSECURE_WEBHOOKS") != "true":
+            raise HTTPException(
+                status_code=500,
+                detail="STRIPE_WEBHOOK_SECRET not configured. Set it, or set ALLOW_INSECURE_WEBHOOKS=true for testing."
+            )
+        event = json.loads(payload_bytes)
     else:
-        # Verify the webhook signature
         try:
-            # Parse signature header
-            sig_parts = {}
-            for part in stripe_signature.split(","):
-                if "=" not in part:
-                    raise HTTPException(status_code=400, detail="Invalid signature format: missing '=' in part")
-                key, value = part.split("=", 1)
-                sig_parts[key] = value
-
-            timestamp = sig_parts.get("t")
-            signature = sig_parts.get("v1")
-
-            if not timestamp or not signature:
-                raise HTTPException(status_code=400, detail="Invalid signature format: missing timestamp or signature")
-
-            # Compute expected signature
-            signed_payload = f"{timestamp}.{payload_bytes.decode('utf-8')}"
-            expected_sig = hmac.new(
-                key=webhook_secret.encode("utf-8"),
-                msg=signed_payload.encode("utf-8"),
-                digestmod=hashlib.sha256
-            ).hexdigest()
-
-            # Compare signatures
-            if not hmac.compare_digest(signature, expected_sig):
-                raise HTTPException(status_code=400, detail="Invalid signature: signature mismatch")
-
-        except HTTPException:
-            # Re-raise HTTPExceptions as-is
-            raise
+            event = stripe.Webhook.construct_event(
+                payload=payload_bytes, sig_header=stripe_signature, secret=webhook_secret
+            )
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=f"Webhook signature parsing failed: {str(e)}")
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Webhook signature verification failed: {str(e)}")
-
-    # Parse the event
-    event = json.loads(payload_bytes.decode("utf-8"))
+            # Invalid payload
+            raise HTTPException(status_code=400, detail=f"Invalid payload: {e}")
+        except stripe.error.SignatureVerificationError as e:
+            # Invalid signature
+            raise HTTPException(status_code=400, detail=f"Invalid signature: {e}")
 
     # Handle different event types
     if event.get("type") == "checkout.session.completed":
