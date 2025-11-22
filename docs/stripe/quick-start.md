@@ -35,8 +35,8 @@
 Create `.env` file in `services/payments/`:
 
 ```bash
-STRIPE_API_KEY=sk_test_YOUR_KEY_HERE
-STRIPE_WEBHOOK_SECRET=whsec_test_YOUR_SECRET_HERE
+STRIPE_API_KEY=your_stripe_api_key_here
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret_here
 DATABASE_URL=postgresql://payments:passwords@localhost:5432/payments
 REDIS_URL=redis://localhost:6379/0
 ```
