@@ -1,0 +1,41 @@
+site_name: Spartan Governance Landing
+site_description: Documentation for Spartan Governance Landing application
+site_author: Spartan Governance Team
+repo_url: https://github.com/Joedaddy66/spartan-governance-landing
+repo_name: Joedaddy66/spartan-governance-landing
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+    accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Stripe Integration:
+      - Architecture: stripe/architecture.md
+      - Quick Start: stripe/quick-start.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search
