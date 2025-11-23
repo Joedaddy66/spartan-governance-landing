@@ -1,6 +1,6 @@
-site_name: Spartan Governance Landing
-site_description: Documentation for Spartan Governance Landing application
-site_author: Spartan Governance Team
+site_name: Veritas Stack Documentation
+site_description: Enterprise AI Governance Platform - Secure, Compliant, Production-Ready
+site_author: Veritas Stack by Spartan Governance
 repo_url: https://github.com/Joedaddy66/spartan-governance-landing
 repo_name: Joedaddy66/spartan-governance-landing
 
@@ -20,10 +20,19 @@ theme:
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - GitHub Pages: github-pages.md
-  - Stripe Integration:
-      - Architecture: stripe/architecture.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Cerberus Security: architecture/cerberus.md
+      - Orion Orchestration: architecture/orion.md
+      - Phi-Core Compliance: architecture/phi-core.md
+  - Enterprise:
+      - Pricing: enterprise/pricing.md
+      - Support & Contact: enterprise/support.md
+  - Integrations:
+      - Stripe Integration: stripe/architecture.md
       - Quick Start: stripe/quick-start.md
+  - Deployment:
+      - GitHub Pages: github-pages.md
 
 markdown_extensions:
   - pymdownx.highlight:
