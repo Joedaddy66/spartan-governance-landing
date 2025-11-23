@@ -93,7 +93,7 @@ Some Veritas Stack components are open source:
 
 - [Architecture Overview](../architecture/overview.md) - Deep dive on system design
 - [Getting Started Guide](../getting-started.md) - Deployment quickstart
-- [API Reference](../stripe/architecture.md) - Integration documentation
+- [Stripe Integration](../stripe/architecture.md) - Integration documentation
 
 ### Security
 
