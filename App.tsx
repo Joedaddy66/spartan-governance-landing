@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { PromoPackGenerator } from './components/PromoPackGenerator';
 import { LiveConversation } from './components/LiveConversation';
 import { RobotIcon } from './components/IconComponents';
@@ -36,6 +37,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-200 flex flex-col items-center p-4 sm:p-6 lg:p-8">
+      <Analytics />
       <div className="w-full max-w-4xl mx-auto">
         <header className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
